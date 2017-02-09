@@ -1,7 +1,7 @@
-type           = module
-name           = Taxonomy menu
-description    = Adds links to taxonomy terms into a menu.
-backdrop       = 1.x
+type = module
+name = Taxonomy menu
+description = Adds links to taxonomy terms into a menu.
+backdrop = 1.x
 
 dependencies[] = taxonomy
 dependencies[] = menu
