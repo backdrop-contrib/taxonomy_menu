@@ -563,7 +563,7 @@ function _taxonomy_menu_update_all_parents($term, $menu_name) {
  * @return array
  *   Menu link ID for the taxonomy menu item.
  */
-function taxonomy_menu_handler($op, $args, $node, $item = array()) {
+function taxonomy_menu_handler($op, $args, $node = NULL, $item = array()) {
 
   // Get the initial $item.
   if (empty($item)) {
@@ -614,6 +614,8 @@ function _taxonomy_menu_save($item) {
     return;
   }
 
+  $insert = TRUE;
+
   $config = config('taxonomy_menu.vocabulary.' . $item['vocabulary']);
   $flatten_menu = $config->get('flat');
 
@@ -641,12 +643,12 @@ function _taxonomy_menu_save($item) {
     'link_path' => 'taxonomy/term/' . $item['tid'],
   );
 
-  // Be sure to load the original menu link to preserve non-standard properties.
-  $original_link = menu_link_load($item['mlid']);
-
-  if (isset($item['mlid']) && !empty($item['mlid']) && $original_link) {
+  if (isset($item['mlid']) && !empty($item['mlid'])) {
+    // Be sure to load the original menu link to preserve non-standard properties.
+    $original_link = menu_link_load($item['mlid']);
     $link = array_merge($original_link, $link);
     $is_hidden = $original_link['hidden'];
+    $insert = FALSE;
   }
   else {
     $is_hidden = 0;
@@ -687,6 +689,9 @@ function _taxonomy_menu_save($item) {
   // Save the menu item.
   if ($mlid = menu_link_save($link)) {
     // If inserting a new menu item then insert a record into the table.
+    if ($insert) {
+      _taxonomy_menu_insert_menu_item($mlid, $item['tid'], $item['vocabulary']);
+    }
     return $mlid;
   }
   else {
