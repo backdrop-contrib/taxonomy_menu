@@ -119,9 +119,6 @@ function taxonomy_menu_update_1000() {
   // Add the new vocabulary index.
   db_add_index('taxonomy_menu', 'vocabulary', array('vocabulary'));
 
-  // @todo update vids to vocabularies in taxonomy_menu table.
-
-
   // Remove unsupported variables.
   db_query("DELETE from {variable} WHERE name LIKE 'taxonomy_menu_path_%'");
   db_query("DELETE from {variable} WHERE name LIKE 'taxonomy_menu_voc_item_%'");
@@ -144,22 +141,34 @@ function taxonomy_menu_update_1000() {
     'taxonomy_menu_term_item_description_',
   );
 
-  // Switch from variables to config.
-  $vocabularies = taxonomy_get_vocabularies();
+  $result = db_query("SELECT * FROM {taxonomy_vocabulary}");
+  foreach ($result as $row) {
+    $vocabulary_data = (array) $row;
+    $vid = $vocabulary_data['vid'];
+    $machine = $vocabulary_data['machine_name'];
+    $label = $vocabulary_data['name'];
 
-  foreach ($vocabularies as $machine => $vocab) {
+    // Update vids to vocabularies in taxonomy_menu table.
+    db_query("UPDATE {taxonomy_menu} SET vocabulary = :vocab WHERE vocabulary = :vid",
+      array(':vocab' => $machine, ':vid' => $vid));
+
+    // Switch from variables to config.
     $config = config('taxonomy_menu.vocabulary.' . $machine);
+    $config->set('name', $machine);
+    $config->set('label', $label);
+
     $empty = TRUE;
     foreach ($variable_prefixes as $prefix) {
       $value = update_variable_get($prefix . $machine, NULL);
       if ($value !== NULL) {
-        $empty = FALSE;
         // Remove the module name.
         $key = str_replace('taxonomy_menu_', '', $prefix);
         // Remove the vocabulary name.
-        $key = str_replace($machine, '', $key);
+        $key = str_replace('_' . $machine, '', $key);
         // Set the config value.
         $config->set($key, $value);
+        // Indicate that we are going to save this config file.
+        $empty = FALSE;
       }
     }
     if (!$empty) {
