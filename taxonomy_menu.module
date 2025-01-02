@@ -919,7 +919,7 @@ function taxonomy_menu_taxonomy_menu_options() {
   $options['sync'] = array(
     '#type' => 'checkbox',
     '#title' => t('Synchronise changes to this vocabulary'),
-    '#description' => t('Every time a term is added/deleted/modified, the corresponding menu link will be altered too.'),
+    '#description' => t('Every time a term is added/deleted/edited, the corresponding menu link will be changed to match.<br><strong>Note</strong>: this does not include changes in term order (weight).'),
     '#default_value' => TRUE,
     '#states' => array(
       // Hide this element when vocab_parent is set to 0.
