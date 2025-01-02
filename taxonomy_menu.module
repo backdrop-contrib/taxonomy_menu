@@ -68,11 +68,11 @@ function taxonomy_menu_form_alter(&$form, &$form_state, $form_id) {
     $menu_items = menu_parent_options($all_menus, $item);
 
     // Add disabled to the top of the list.
-    array_unshift($menu_items, t('- Disabled -'));
+    $menu_items = array_merge(array('0:0' => t('- Disabled -')), $menu_items);
 
     $vocabulary = 0;
-    $vocab_parent_default = 0;
-    // The vocab name isn't set when a new vocabulary is being created.
+    $vocab_parent_default = '0:0';
+    // The vocab name isn't set yet, when a new vocabulary is being created.
     if (isset($form['machine_name']) && isset($form['machine_name']['#default_value'])) {
       $vocabulary = $form['machine_name']['#default_value'];
       $config = config('taxonomy_menu.vocabulary.' . $vocabulary);
@@ -130,59 +130,57 @@ function taxonomy_menu_form_alter(&$form, &$form_state, $form_id) {
  */
 function taxonomy_menu_vocab_submit($form, &$form_state) {
   $vocabulary = $form_state['values']['machine_name'];
+  $config = config('taxonomy_menu.vocabulary.' . $vocabulary);
 
   // Menu location has been set to disabled.
-  if (is_numeric($form_state['values']['taxonomy_menu']['vocab_parent'])) {
-    // Don't want to throw notices.
-    $form_state['values']['taxonomy_menu']['vocab_parent'] = '0:0';
-    // If the menu was not previously enabled, skip the rest.
-    if (config_get('taxonomy_menu.vocabulary.' . $vocabulary, 'vocab_menu') === NULL) {
+  if ($form_state['values']['taxonomy_menu']['vocab_parent'] == '0:0') {
+    // If the menu was not previously enabled (NULL or 0), skip the rest.
+    if (empty($config->get('vocab_menu'))) {
       return;
     }
+    // Save this disabled state cleanly as '0'.
+    $config->set('vocab_menu', '0');
   }
+  else {
+    $config->set('name', $vocabulary);
+    $config->set('label', $form_state['values']['name']);
 
-  // Menu is enabled: create a new config object, or load existing.
-  $config = config('taxonomy_menu.vocabulary.' . $vocabulary);
-  $config->set('name', $vocabulary);
-  $config->set('label', $form_state['values']['name']);
+    // Split the menu location into menu name and menu item id.
+    list($vocab_parent['vocab_menu'], $vocab_parent['vocab_parent']) = explode(':', $form_state['values']['taxonomy_menu']['vocab_parent']);
 
-  // Split the menu location into menu name and menu item id.
-  list($vocab_parent['vocab_menu'], $vocab_parent['vocab_parent']) = explode(':', $form_state['values']['taxonomy_menu']['vocab_parent']);
+    // Initalize helpful variables to track changes.
+    $changed_menu = FALSE;
+    $change_vocab_item = FALSE;
+    $changed_path = FALSE;
 
-  // Init flag variables to avoid notices if changes haven't happened.
-  $changed_menu = FALSE;
-  $change_vocab_item = FALSE;
-  $changed_path = FALSE;
-
-  // Set the menu name and check for changes.
-  if ($config->get('vocab_menu') != $vocab_parent['vocab_menu']) {
-    $changed_menu = TRUE;
-  }
-  $config->set('vocab_menu', $vocab_parent['vocab_menu']);
-
-  // Set the menu parent item and check for changes.
-  if ($config->get('vocab_parent') != $vocab_parent['vocab_parent']) {
-    $changed_menu = TRUE;
-  }
-  $config->set('vocab_parent', $vocab_parent['vocab_parent']);
-
-  // Check each of the options for changes that might need a menu rebuild.
-  foreach ($form_state['values']['taxonomy_menu']['options'] as $key => $value) {
-
-    // Check to see if the vocab enable options has changed
-    if ($key == 'voc_item') {
-      if ($config->get($key) != $value) {
-        $change_vocab_item = TRUE;
-      }
+    // Set the menu name and check for changes.
+    if ($config->get('vocab_menu') != $vocab_parent['vocab_menu']) {
+      $changed_menu = TRUE;
+      $config->set('vocab_menu', $vocab_parent['vocab_menu']);
     }
 
-    if ($config->get($key) != $value) {
-      // Set checkboxes to boolean.
-      if ($form['taxonomy_menu']['options'][$key]['#type'] == 'checkbox') {
-        $value = (bool)$value;
+    // Set the menu parent item and check for changes.
+    if ($config->get('vocab_parent') != $vocab_parent['vocab_parent']) {
+      $changed_menu = TRUE;
+      $config->set('vocab_parent', $vocab_parent['vocab_parent']);
+    }
+
+    // Check each of the options for changes that might need a menu rebuild.
+    foreach ($form_state['values']['taxonomy_menu']['options'] as $key => $value) {
+      // Check to see if the vocab enable options has changed
+      if ($key == 'voc_item') {
+        if ($config->get($key) != $value) {
+          $change_vocab_item = TRUE;
+        }
       }
-      $config->set($key, $value);
-      $changed = TRUE;
+      if ($config->get($key) != $value) {
+        // Set checkboxe values to boolean.
+        if ($form['taxonomy_menu']['options'][$key]['#type'] == 'checkbox') {
+          $value = (bool)$value;
+        }
+        $config->set($key, $value);
+        $changed_settings = TRUE;
+      }
     }
   }
 
