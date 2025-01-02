@@ -364,21 +364,31 @@ function taxonomy_menu_taxonomy_vocabulary_delete($vocabulary) {
  * Implements hook_taxonomy_term_insert($term).
  */
 function taxonomy_menu_taxonomy_term_insert($term) {
-  _taxonomy_menu_taxonomy_termapi_helper($term, 'insert');
+  // Only act if 'Synchronize' is set for this vocabulary.
+  $config = config('taxonomy_menu.vocabulary.' . $term->vocabulary);
+  if ($config->get('sync')) {
+    _taxonomy_menu_taxonomy_termapi_helper($term, 'insert', $config);
+  }
 }
 
 /**
  * Implements hook_taxonomy_term_update().
  */
 function taxonomy_menu_taxonomy_term_update($term) {
-  _taxonomy_menu_taxonomy_termapi_helper($term, 'update');
+  // Only act if 'Synchronize' is set for this vocabulary.
+  $config = config('taxonomy_menu.vocabulary.' . $term->vocabulary);
+  if ($config->get('sync')) {
+    _taxonomy_menu_taxonomy_termapi_helper($term, 'update', $config);
+  }
 }
 
 /**
  * Implements hook_taxonomy_term_delete().
  */
 function taxonomy_menu_taxonomy_term_delete($term) {
-  _taxonomy_menu_taxonomy_termapi_helper($term, 'delete');
+  // Delete even when 'Synchronize' is not set for this vocabulary.
+  $config = config('taxonomy_menu.vocabulary.' . $term->vocabulary);
+  _taxonomy_menu_taxonomy_termapi_helper($term, 'delete', $config);
 }
 
 /**
@@ -442,11 +452,18 @@ function taxonomy_menu_node_delete($node) {
 
 /**
  * Helper function: Abstraction of hook_taxonomy_term_<operation>()
+ *
+ * @param TaxonomyTerm object $term
+ *   Fully loaded taxonomy term object.
+ * @param string $operation
+ *   The operation to be performed [update|insert|delete]
+ * @param Configuration object $config
+ *   Loaded configuration object from the previous step.
  */
-function _taxonomy_menu_taxonomy_termapi_helper($term, $operation) {
-  // Only sync if taxonomy_menu is enabled for this vocab and the 'sync'
-  // option has been checked.
-  $config = config('taxonomy_menu.vocabulary.' . $term->vocabulary);
+function _taxonomy_menu_taxonomy_termapi_helper($term, $operation, $config) {
+  if (!isset($config)) {
+    $config = config('taxonomy_menu.vocabulary.' . $vocabulary);
+  }
   $menu_name = $config->get('vocab_menu');
   $sync = $config->get('sync');
   $depth = $config->get('max_depth');
