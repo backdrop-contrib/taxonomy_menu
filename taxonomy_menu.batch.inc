@@ -59,12 +59,12 @@ function taxonomy_menu_insert_link_items_process($terms, $menu_name, &$context) 
   _taxonomy_menu_batch_init_context($context, $start, $end, 10);
 
   // Loop through $terms to process each term.
-  for ($i=$start; $i<count($terms) && $i<$end; $i++) {
+  for ($i = $start; $i < count($terms) && $i < $end; $i++) {
     $args = array(
       'term' => $terms[$i],
       'menu_name' => $menu_name,
     );
-    $mlid = taxonomy_menu_handler('insert', $args);
+    $mlid = taxonomy_menu_handler('insert', $args, NULL);
   }
 
   _taxonomy_menu_batch_update_context($context, $end, count($terms), 'Creating Menu Items');
