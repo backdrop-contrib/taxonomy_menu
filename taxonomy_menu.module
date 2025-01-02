@@ -924,7 +924,7 @@ function taxonomy_menu_taxonomy_menu_options() {
   );
   $options['hide_empty_terms'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Do not add a menu link for taxonomy terms with no items.'),
+    '#title' => t('Do not enable the menu link for taxonomy terms with no items.'),
     '#default_value' => FALSE,
   );
   $options['term_item_description'] = array(
