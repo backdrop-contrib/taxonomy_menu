@@ -120,8 +120,6 @@ function taxonomy_menu_form_alter(&$form, &$form_state, $form_id) {
   elseif ($form_id == "taxonomy_overview_terms") {
     // Add an extra submit handler to sync the rearranged terms with menu.
     $form['#submit'][] = 'taxonomy_menu_overview_submit';
-    // @ TODO: using hook_taxonomy_vocabulary_update() is nicer then callback,
-    // but gives less info and does not always fire.
   }
 }
 
@@ -150,7 +148,6 @@ function taxonomy_menu_vocab_submit($form, &$form_state) {
 
     // Initalize helpful variables to track changes.
     $changed_menu = FALSE;
-    $change_vocab_item = FALSE;
     $changed_path = FALSE;
 
     // Set the menu name and check for changes.
@@ -168,13 +165,8 @@ function taxonomy_menu_vocab_submit($form, &$form_state) {
     // Check each of the options for changes that might need a menu rebuild.
     foreach ($form_state['values']['taxonomy_menu']['options'] as $key => $value) {
       // Check to see if the vocab enable options has changed
-      if ($key == 'voc_item') {
-        if ($config->get($key) != $value) {
-          $change_vocab_item = TRUE;
-        }
-      }
       if ($config->get($key) != $value) {
-        // Set checkboxe values to boolean.
+        // Set checkbox values to boolean.
         if ($form['taxonomy_menu']['options'][$key]['#type'] == 'checkbox') {
           $value = (bool)$value;
         }
@@ -188,30 +180,30 @@ function taxonomy_menu_vocab_submit($form, &$form_state) {
   $config->save();
 
   // These variables make the logic below easier to read.
-  $rebuild = $form_state['values']['taxonomy_menu']['options']['rebuild'];
-  $vocab_menu_enabled = $config->get('vocab_menu');
+  $rebuild_requested = $form_state['values']['taxonomy_menu']['options']['rebuild'];
+  $taxmenu_enabled = $config->get('vocab_menu');
 
-  // If the menu hasn't changed and the menu is disabled then do not do anything else.
-  if ($rebuild || $changed_menu || (!$changed_menu && ($vocab_menu_enabled == 0))) {
+  // If a rebuild was NOT requested, and no changes, return.
+  if (!$rebuild_requested  && !$changed_menu) {
+    return;
+  }
 
-    // Rebuild if rebuild is selected, menu has changed or vocabulary option changed.
-    if ($rebuild || $changed_menu || $change_vocab_item) {
-      $message = _taxonomy_menu_rebuild($vocabulary);
-    }
+  // Rebuild if rebuild is selected, menu has changed or vocabulary option changed.
+  if ($rebuild_requested  || $changed_menu || $changed_vocab_item) {
+    $message = _taxonomy_menu_rebuild($vocabulary);
+  }
+  // If setting has changed and a menu item is enabled, then update all of the menu items.
+  elseif ($changed_settings && $taxmenu_enabled ) {
+    $message = _taxonomy_menu_update_link_items($vocabulary);
+  }
 
-    // If setting has changed and a menu item is enabled, then update all of the menu items.
-    elseif ($changed && $vocab_menu_enabled) {
-      $message = _taxonomy_menu_update_link_items($vocabulary);
-    }
+  // Do a full menu rebuild in case we have removed the menu or moved it between menus.
+  state_set('menu_rebuild_needed', TRUE);
 
-    // Do a full menu rebuild in case we have removed the menu or moved it between menus.
-    state_set('menu_rebuild_needed', TRUE);
-
-    // Only send a message if one has been created.
-    if (isset($message) && $message) {
-      // Note: $message is already sanitized coming out of its source function.
-      drupal_set_message($message, 'status');
-    }
+  // Only send a message if one has been created.
+  if (isset($message) && $message) {
+    // Note: $message is already sanitized coming out of its source function.
+    backdrop_set_message($message, 'status');
   }
 }
 
