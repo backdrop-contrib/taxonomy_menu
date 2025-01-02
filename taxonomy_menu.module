@@ -101,6 +101,12 @@ function taxonomy_menu_form_alter(&$form, &$form_state, $form_id) {
       '#default_value' => 0,
       '#weight' => 20,
       '#description' => t('<strong>Warning</strong>: This will delete then re-create all of the menu items. Only use this option if you are experiencing issues like missing menu items or other inconsistencies.'),
+      '#states' => array(
+        // Hide this element when vocab_parent is set to 0.
+        'invisible' => array(
+          ':input[name="taxonomy_menu[vocab_parent]"]' => array('value' => '0:0'),
+        ),
+      ),
     );
 
     // Move the buttons to the bottom of the form.
@@ -909,6 +915,12 @@ function taxonomy_menu_taxonomy_menu_options() {
     '#title' => t('Synchronise changes to this vocabulary'),
     '#description' => t('Every time a term is added/deleted/modified, the corresponding menu link will be altered too.'),
     '#default_value' => TRUE,
+    '#states' => array(
+      // Hide this element when vocab_parent is set to 0.
+      'invisible' => array(
+        ':input[name="taxonomy_menu[vocab_parent]"]' => array('value' => '0:0'),
+      ),
+    ),
   );
   $options['max_depth'] = array(
    '#type' => 'select',
@@ -916,31 +928,67 @@ function taxonomy_menu_taxonomy_menu_options() {
    '#description' => t('Limit how many levels of the taxonomy tree to process. Useful if you have a very large tree of taxonomy terms, and only want to provide a menu for the first several levels.'),
    '#options' => array(0 => t('All'), 1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9),
    '#default_value' => 0,
+   '#states' => array(
+     // Hide this element when vocab_parent is set to 0.
+     'invisible' => array(
+       ':input[name="taxonomy_menu[vocab_parent]"]' => array('value' => '0:0'),
+     ),
+   ),
   );
   $options['display_num'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display the number of items in each taxonomy term.'),
     '#default_value' => FALSE,
+    '#states' => array(
+      // Hide this element when vocab_parent is set to 0.
+      'invisible' => array(
+        ':input[name="taxonomy_menu[vocab_parent]"]' => array('value' => '0:0'),
+      ),
+    ),
   );
   $options['hide_empty_terms'] = array(
     '#type' => 'checkbox',
     '#title' => t('Do not enable the menu link for taxonomy terms with no items.'),
     '#default_value' => FALSE,
+    '#states' => array(
+      // Hide this element when vocab_parent is set to 0.
+      'invisible' => array(
+        ':input[name="taxonomy_menu[vocab_parent]"]' => array('value' => '0:0'),
+      ),
+    ),
   );
   $options['term_item_description'] = array(
     '#type' => 'checkbox',
     '#title' => t('Add the taxonomy term description as the title attribute on the menu link.'),
     '#default_value' => FALSE,
+    '#states' => array(
+      // Hide this element when vocab_parent is set to 0.
+      'invisible' => array(
+        ':input[name="taxonomy_menu[vocab_parent]"]' => array('value' => '0:0'),
+      ),
+    ),
   );
   $options['expanded'] = array(
     '#type' => 'checkbox',
     '#title' => t('Automatically show all menu items as expanded.'),
     '#default_value' => TRUE,
+    '#states' => array(
+      // Hide this element when vocab_parent is set to 0.
+      'invisible' => array(
+        ':input[name="taxonomy_menu[vocab_parent]"]' => array('value' => '0:0'),
+      ),
+    ),
   );
   $options['flat'] = array(
     '#type' => 'checkbox',
     '#title' => t('Add all menu items to the same level rather than retaining term hierarchy.'),
     '#default_value' => FALSE,
+    '#states' => array(
+      // Hide this element when vocab_parent is set to 0.
+      'invisible' => array(
+        ':input[name="taxonomy_menu[vocab_parent]"]' => array('value' => '0:0'),
+      ),
+    ),
   );
 
   return $options;
