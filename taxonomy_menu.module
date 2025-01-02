@@ -130,8 +130,15 @@ function taxonomy_menu_vocab_submit($form, &$form_state) {
   $vocabulary = $form_state['values']['machine_name'];
   $config = config('taxonomy_menu.vocabulary.' . $vocabulary);
 
+  // Initalize helpful variables to track changes.
+  $taxmenu_enabled = $config->get('vocab_menu');
+  $new_vocab_parent = $form_state['values']['taxonomy_menu']['vocab_parent'];
+  $rebuild_requested = $form_state['values']['taxonomy_menu']['options']['rebuild'];
+  $changed_menu = FALSE;
+  $changed_path = FALSE;
+
   // Menu location has been set to disabled.
-  if ($form_state['values']['taxonomy_menu']['vocab_parent'] == '0:0') {
+  if ($new_vocab_parent == '0:0') {
     // If the menu was not previously enabled (NULL or 0), skip the rest.
     if (empty($config->get('vocab_menu'))) {
       return;
@@ -144,11 +151,7 @@ function taxonomy_menu_vocab_submit($form, &$form_state) {
     $config->set('label', $form_state['values']['name']);
 
     // Split the menu location into menu name and menu item id.
-    list($vocab_parent['vocab_menu'], $vocab_parent['vocab_parent']) = explode(':', $form_state['values']['taxonomy_menu']['vocab_parent']);
-
-    // Initalize helpful variables to track changes.
-    $changed_menu = FALSE;
-    $changed_path = FALSE;
+    list($vocab_parent['vocab_menu'], $vocab_parent['vocab_parent']) = explode(':', $new_vocab_parent);
 
     // Set the menu name and check for changes.
     if ($config->get('vocab_menu') != $vocab_parent['vocab_menu']) {
@@ -178,10 +181,6 @@ function taxonomy_menu_vocab_submit($form, &$form_state) {
 
   // Save new or updated config.
   $config->save();
-
-  // These variables make the logic below easier to read.
-  $rebuild_requested = $form_state['values']['taxonomy_menu']['options']['rebuild'];
-  $taxmenu_enabled = $config->get('vocab_menu');
 
   // If a rebuild was NOT requested, and no changes, return.
   if (!$rebuild_requested  && !$changed_menu) {
